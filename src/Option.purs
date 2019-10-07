@@ -1376,12 +1376,23 @@ setMay ::
   Data.Maybe.Maybe value ->
   Option option ->
   Option option
-setMay proxy vMay def = modify proxy go def
+setMay proxy vMay def = case vMay of
+  Data.Maybe.Just v -> insOrSet proxy v def
+  Data.Maybe.Nothing -> def
+
+-- | Loosens types to combine functionality of `set` and `insert`.
+insOrSet ::
+  forall label option option' proxy value.
+  Data.Symbol.IsSymbol label =>
+  Prim.Row.Cons label value option' option =>
+  proxy label ->
+  value ->
+  Option option ->
+  Option option
+insOrSet proxy value option = (alter go proxy option).option
   where
-  go :: value -> value
-  go optVal = case vMay of
-    Data.Maybe.Just v -> v
-    Data.Maybe.Nothing -> optVal
+  go :: Data.Maybe.Maybe value -> Data.Maybe.Maybe value
+  go _ = Data.Maybe.Just value
 
 -- | A convenience function calling `setMay` that can be used to iteratively
 -- | mutate an existing `Option`, where mutations may occur in any order.

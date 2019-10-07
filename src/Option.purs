@@ -22,6 +22,7 @@ module Option
   , getWithDefault
   , insert
   , jsonCodec
+  , maySetOptState
   , modify
   , set
   , toRecord

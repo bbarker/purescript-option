@@ -20,6 +20,7 @@ module Option
   , get
   , getWithDefault
   , insert
+  , insOrSet
   , jsonCodec
   , modify
   , set
@@ -1228,6 +1229,19 @@ set proxy value = modify proxy go
   where
   go :: forall a. a -> value
   go _ = value
+
+insOrSet ::
+  forall label option option' proxy value.
+  Data.Symbol.IsSymbol label =>
+  Prim.Row.Cons label value option' option =>
+  proxy label ->
+  value ->
+  Option option ->
+  Option option
+insOrSet proxy value option = (alter go proxy option).option
+  where
+  go :: Data.Maybe.Maybe value -> Data.Maybe.Maybe value
+  go _ = Data.Maybe.Just value
 
 -- | The expected `Record record` will have the same fields as the given `Option _` where each type is wrapped in a `Maybe`.
 -- |

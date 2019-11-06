@@ -19,11 +19,13 @@ module Option
   , empty
   , get
   , getAll
+  , getSubset
   , getWithDefault
   , insert
   , jsonCodec
   , maySetOptState
   , modify
+  , project
   , set
   , toRecord
   , class DecodeJsonOption
@@ -68,9 +70,11 @@ import Data.Argonaut.Core as Data.Argonaut.Core
 import Data.Argonaut.Decode.Class as Data.Argonaut.Decode.Class
 import Data.Argonaut.Encode.Class as Data.Argonaut.Encode.Class
 import Data.Argonaut.Encode.Combinators as Data.Argonaut.Encode.Combinators
+import Data.Array as Data.Array
 import Data.Codec as Data.Codec
 import Data.Codec.Argonaut as Data.Codec.Argonaut
 import Data.Either as Data.Either
+import Data.Function.Uncurried as Data.Function.Uncurried
 import Data.List as Data.List
 import Data.Maybe as Data.Maybe
 import Data.Profunctor.Star as Data.Profunctor.Star
@@ -82,8 +86,10 @@ import Foreign.Object as Foreign.Object
 import Prim.Row as Prim.Row
 import Prim.RowList as Prim.RowList
 import Record as Record
+import Record.Extra as Record.Extra
 import Simple.JSON as Simple.JSON
 import Type.Equality as Type.Equality
+import Type.Data.Row as Type.Data.Row
 import Unsafe.Coerce as Unsafe.Coerce
 
 -- | A collection of key/value pairs where any key and value may or may not exist.
@@ -1099,6 +1105,28 @@ delete proxy option = (alter go proxy option).option
   go :: forall a. a -> Data.Maybe.Maybe value
   go _ = Data.Maybe.Nothing
 
+project ::
+  forall option' extra option keys.
+  Prim.Row.Union option extra option' =>
+  Prim.RowList.RowToList option keys =>
+  Record.Extra.Keys keys =>
+  Option option' ->
+  Option option
+project = Data.Function.Uncurried.runFn2 pickFnOpt ks
+  where
+  ks = Data.Array.fromFoldable $
+    Record.Extra.keys (Type.Data.Row.RProxy :: Type.Data.Row.RProxy option)
+
+getSubset ::
+  forall extra option keys record.
+  Prim.Row.Union record extra option =>
+  Prim.RowList.RowToList record keys =>
+  Record.Extra.Keys keys =>
+  GetAll record record =>
+  Option option ->
+  Data.Maybe.Maybe (Record record)
+getSubset option = getAll $ ((project option) :: Option record)
+
 -- | Creates an option with no key/values that matches any type of option.
 -- |
 -- | This can be useful as a starting point for an option that is later built up.
@@ -1470,3 +1498,7 @@ user8 = toRecord user
 
 user9 :: Data.Maybe.Maybe { age :: Int, username :: String }
 user9 = getAll user
+
+pickFnOpt :: forall o1 o2. Data.Function.Uncurried.Fn2
+  (Array String) (Option o1) (Option o2)
+pickFnOpt = Unsafe.Coerce.unsafeCoerce Record.Extra.pickFn

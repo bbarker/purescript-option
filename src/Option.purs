@@ -1112,7 +1112,7 @@ project ::
   Record.Extra.Keys keys =>
   Option option' ->
   Option option
-project = Data.Function.Uncurried.runFn2 pickFnOpt ks
+project = Data.Function.Uncurried.runFn2 pickFn ks
   where
   ks = Data.Array.fromFoldable $
     Record.Extra.keys (Type.Data.Row.RProxy :: Type.Data.Row.RProxy option)
@@ -1499,6 +1499,5 @@ user8 = toRecord user
 user9 :: Data.Maybe.Maybe { age :: Int, username :: String }
 user9 = getAll user
 
-pickFnOpt :: forall o1 o2. Data.Function.Uncurried.Fn2
-  (Array String) (Option o1) (Option o2)
-pickFnOpt = Unsafe.Coerce.unsafeCoerce Record.Extra.pickFn
+foreign import pickFn ::
+  forall o1 o2. Data.Function.Uncurried.Fn2 (Array String) (Option o1) (Option o2)
